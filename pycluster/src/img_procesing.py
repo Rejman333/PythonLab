@@ -211,18 +211,7 @@ class ImgProcessor:
         plt.axis('off')
         plt.show()
 
-    @staticmethod
-    def draw_clusters_on_image(np_img: np.ndarray, clusters: List[ClusterType], save_path: str):
-        # Convert np image to PIL Image
-        img = Image.fromarray(np_img)
-        draw = ImageDraw.Draw(img)
 
-        for cluster in clusters:
-            top_left, bottom_right, label = cluster
-            # we have to switch x with y, because of missmatch witch different coordinate system
-            draw.rectangle([(top_left[1], top_left[0]), (bottom_right[1], bottom_right[0])], outline="red", width=1)
-
-        img.save(save_path)
 
     def create_clusters(self, gray_option: int, threshold: int) -> List[ClusterType]:
         self.gray_img = self.grayscale(self.img, gray_option)

@@ -1,8 +1,21 @@
 import numpy as np
 import json
 from typing import List
-
+from PIL import Image, ImageDraw
 from pycluster.src.custom_types import ClusterType
+
+
+def save_to_img(img: np.ndarray, clusters: List[ClusterType], save_path: str):
+    # Convert np image to PIL Image
+    img = Image.fromarray(img)
+    draw = ImageDraw.Draw(img)
+
+    for cluster in clusters:
+        top_left, bottom_right, label = cluster
+        # we have to switch x with y, because of missmatch witch different coordinate system
+        draw.rectangle([(top_left[1], top_left[0]), (bottom_right[1], bottom_right[0])], outline="red", width=1)
+
+    img.save(save_path)
 
 
 def save_clusters(clusters: List[ClusterType], file_name: str = "data", /, *, file_format: str = "csv") -> None:
@@ -17,6 +30,7 @@ def save_clusters(clusters: List[ClusterType], file_name: str = "data", /, *, fi
         case "csv":
             pass
         case "img":
+
             pass
         case _:
             raise Warning(f"File format: {file_format} not supported, using csv as default.")
