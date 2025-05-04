@@ -43,8 +43,8 @@ class MainImageDisplay(tk.Frame):
         if self.canvas_img_id is None:
             return
 
-        x, y = self._get_mouse_on_img((event.x, event.y))
-        self.set_position(x, y)
+        x, y = self._get_mouse_on_img(event)
+        self.set_position(x + 1, y + 1)
         self.set_color(self.image.getpixel((x, y)))
 
         if self.rectangle_id and self.is_rectangle_finished:
@@ -130,22 +130,16 @@ class MainImageDisplay(tk.Frame):
         self.original_image = image
         self.image = image
         self.tk_img = ImageTk.PhotoImage(self.image)
+        self.canvas.delete("all")
 
-        self.canvas.delete("all")  # Clear previous image
-        self.canvas_img_id = self.canvas.create_image(
-            self.canvas.winfo_width() // 2 + self.offset[0],
-            self.canvas.winfo_height() // 2 + self.offset[1],
-            image=self.tk_img,
-            anchor="center"
-        )
+        x, y = self._count_relative_xy()
+        self.canvas_img_id = self.canvas.create_image(x, y, image=self.tk_img, anchor="nw")
 
     def _on_canvas_resize(self, event):
         if self.tk_img and self.canvas_img_id:
-            self.canvas.coords(
-                self.canvas_img_id,
-                event.width // 2 + self.offset[0],
-                event.height // 2 + self.offset[1]
-            )
+            x, y = self._count_relative_xy()
+            self.canvas.coords(self.canvas_img_id, x, y, )
+
         if self.rectangle_id and self.start_rectangle and self.end_rectangle:
             self.canvas.coords(
                 self.rectangle_id,
@@ -157,12 +151,8 @@ class MainImageDisplay(tk.Frame):
 
     def on_pen(self):
         if self.tk_img and self.canvas_img_id:
-            # Reposition image to new center
-            self.canvas.coords(
-                self.canvas_img_id,
-                self.canvas.winfo_width() // 2 + self.offset[0],
-                self.canvas.winfo_height() // 2 + self.offset[1]
-            )
+            x, y = self._count_relative_xy()
+            self.canvas.coords(self.canvas_img_id, x, y)
             if self.rectangle_id:
                 self.canvas.coords(
                     self.rectangle_id,
@@ -192,10 +182,11 @@ class MainImageDisplay(tk.Frame):
         self.offset = (max(-max_x, min(self.offset[0], max_x)), max(-max_y, min(self.offset[1], max_y)))
 
     def _get_mouse_on_img(self, mouse):
-        new_mouse_position = (
-            max(min(mouse[0] - max((self.canvas.winfo_width() - self.image.width) // 2, 0), self.image.width - 1), 0) -
-            self.canvas.winfo_width() // 2 + self.offset[0],
-            max(min(mouse[1] - max((self.canvas.winfo_height() - self.image.height) // 2, 0), self.image.height - 1),
-                0) - self.canvas.winfo_height() // 2 + self.offset[1]
-        )
-        return new_mouse_position
+        x, y = self._count_relative_xy()
+        print(self.image.width, self.image.height)
+        return min(max(mouse.x - x, 0), self.image.width - 1), min(max(mouse.y - y, 0), self.image.height - 1)
+
+    def _count_relative_xy(self):
+        relative_x = (self.canvas.winfo_width() - self.image.width) // 2 + self.offset[0]
+        relative_y = (self.canvas.winfo_height() - self.image.height) // 2 + self.offset[1]
+        return relative_x, relative_y
