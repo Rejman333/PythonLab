@@ -47,8 +47,6 @@ class MainImageDisplay(tk.Frame):
         self.set_position(x, y)
         self.set_color(self.image.getpixel((x, y)))
 
-        print(x, y)
-
         if self.rectangle_id and self.is_rectangle_finished:
             if (self.start_rectangle[0] <= event.x - self.offset[0] <= self.end_rectangle[0] and
                     self.start_rectangle[1] <= event.y - self.offset[1] <= self.end_rectangle[1]):
@@ -195,7 +193,9 @@ class MainImageDisplay(tk.Frame):
 
     def _get_mouse_on_img(self, mouse):
         new_mouse_position = (
-            max(min(mouse[0] - max((self.canvas.winfo_width() - self.image.width) // 2, 0), self.image.width - 1), 0),
-            max(min(mouse[1] - max((self.canvas.winfo_height() - self.image.height) // 2, 0), self.image.height - 1), 0)
+            max(min(mouse[0] - max((self.canvas.winfo_width() - self.image.width) // 2, 0), self.image.width - 1), 0) -
+            self.canvas.winfo_width() // 2 + self.offset[0],
+            max(min(mouse[1] - max((self.canvas.winfo_height() - self.image.height) // 2, 0), self.image.height - 1),
+                0) - self.canvas.winfo_height() // 2 + self.offset[1]
         )
         return new_mouse_position
