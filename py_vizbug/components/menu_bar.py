@@ -16,6 +16,9 @@ class MenuBar:
         # File Menu
         file_menu = Menu(menu_bar, tearoff=0)
         file_menu.add_command(label="Open", command=self.on_open)
+        file_menu.add_command(label="Import Bounding Boxes", command=self.on_open)
+        file_menu.add_separator()
+        file_menu.add_command(label="Monitor Folder", command=do_nothing)
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.on_exit)
         menu_bar.add_cascade(label="File", menu=file_menu)

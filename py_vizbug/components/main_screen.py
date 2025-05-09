@@ -39,6 +39,7 @@ class MainImageDisplay(tk.Frame):
         self.zoom_offset = (0, 0)
         self.crop_box = None
 
+
     def init_img(self, image: Image.Image):
         self.original_image = image
         self.image = image
@@ -54,8 +55,8 @@ class MainImageDisplay(tk.Frame):
             return
 
         x, y = self._from_screen_to_img_point_convertion((event.x, event.y))
-        # self.set_position(x + 1, y + 1)
-        # self.set_color(self.image.getpixel((x, y)))
+        self.set_position(self.zoom_offset[0] + x + 1, self.zoom_offset[1] + y + 1)
+        self.set_color(self.image.getpixel((x, y)))
 
     def left_click(self, event):
         if self.canvas_img_id is None:
@@ -142,6 +143,8 @@ class MainImageDisplay(tk.Frame):
         # Resize using nearest-neighbor (no smoothing)
         if scale != 0:
             resized = cropped.resize(new_size, Image.NEAREST)
+            self.zoom_offset = (self.zoom_offset[0] + self.offset[1], self.zoom_offset[1] + self.offset[1])
+            self.offset = (0, 0)
         else:
             resized = cropped
 
@@ -162,3 +165,6 @@ class MainImageDisplay(tk.Frame):
                          p2_after_convertion[0], p2_after_convertion[1])
         print(self.crop_box)
         self._process_img()
+
+    def draw_bounding_boxes(self):
+        pass
