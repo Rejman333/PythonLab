@@ -42,7 +42,7 @@ class App(tk.Tk):
             return
         self.img = Image.open(file_path)
         self.footer.set_file(file_path)
-        self.image_display.update_image(self.img)
+        self.image_display.init_img(self.img)
 
     def on_move(self, x, y):
         self.footer.set_position(x)
