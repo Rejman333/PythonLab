@@ -6,13 +6,15 @@ from py_vizbug.components.TkFolderWatcher import TkFolderWatcher
 from py_vizbug.components.footer import Footer
 from py_vizbug.components.menu_bar import MenuBar
 from py_vizbug.components.main_screen import MainImageDisplay
+from py_vizbug.components.custom_types import ClusterType
 
-from typing import List, Tuple
+from typing import List
 
 import json
 import csv
 
-ClusterType = Tuple[Tuple[int, int], Tuple[int, int], int]
+APPLICATION_TITLE = "Simple App"
+APPLICATION_STARTING_GEOMETRY = "800x600"
 
 
 class App(tk.Tk):
@@ -20,8 +22,8 @@ class App(tk.Tk):
         super().__init__()
 
         # --- Window setup ---
-        self.title("Simple App")
-        self.geometry("800x600")
+        self.title(APPLICATION_TITLE)
+        self.geometry(APPLICATION_STARTING_GEOMETRY)
 
         # --- Configure grid layout for main window ---
         self.grid_rowconfigure(0, weight=1)  # Image display expands
@@ -38,55 +40,41 @@ class App(tk.Tk):
         self.footer = Footer(self, self.active_image_move_left, self.active_image_move_right)
         self.footer.frame.grid(row=1, column=0, sticky="ew")
 
-        self.footer.set_position(120, 240)
-        self.footer.set_color((255, 200, 150))
+        self.footer.set_position(0, 0)
+        self.footer.set_color((255, 255, 255))
+
+        # --- Folder watcher ---
+        self.folder_watcher = None
 
         # --- Internal state ---
         self.img = []
         self.active_img_id = None
 
-        self.folder_watcher = None
+    # --Footer Functions--
+    def set_img(self, file_path = None, is_from_watcher = False):
+        if is_from_watcher is False and self.folder_watcher:
+            self.folder_watcher.stop()
+            self.folder_watcher = None
+            self.img = []
+            self.active_img_id = None
 
-    def watch_folder(self):
-        file_path = filedialog.askdirectory()
+        if file_path is None: file_path = filedialog.askopenfilename()
+
         if not file_path:
             return
-        self.folder_watcher = TkFolderWatcher(self, file_path, self.handle_new_file)
-        self.folder_watcher.start()
 
-    def stop_watch_folder(self):
-        self.folder_watcher.stop()
-        self.folder_watcher = None
-
-    def handle_new_file(self, file_path):
-        print(f"📄 New file: {file_path}")
-        self.set_img_from_path(file_path)
-
-    def set_img_from_path(self, file_path):
-        if not file_path:
-            return
         self.img.append([file_path, Image.open(file_path).copy(), None])
         self.footer.set_file(file_path)
         self.active_img_id = len(self.img) - 1
         self._lock_unlock_button()
-        self.image_display.init_img(self.img[self.active_img_id][1])
+        self.image_display.init_img(self.img[self.active_img_id][1],self.img[self.active_img_id][2])
 
-    def set_img(self):
-        file_path = filedialog.askopenfilename()
-        if not file_path:
-            return
-        self.img.append([file_path, Image.open(file_path).copy(), None])
-        self.footer.set_file(file_path)
-        self.active_img_id = len(self.img) - 1
-        self._lock_unlock_button()
-        self.image_display.init_img(self.img[self.active_img_id][1])
-
-    # noinspection PyUnreachableCode
     def set_clusters(self):
+        if self.active_img_id is None:
+            return
+
         file_path = filedialog.askopenfilename()
         if not file_path:
-            return
-        if self.active_img_id is None:
             return
 
         clusters: List[ClusterType] = []
@@ -116,11 +104,20 @@ class App(tk.Tk):
             print("Unsupported file type. Use .csv or .json.")
             return
 
-        self.img[self.active_img_id][2] =  clusters
+        # noinspection PyUnreachableCode
         print(f"✔ Loaded {len(clusters)} clusters from: {file_path}")
+        self.img[self.active_img_id][2] = clusters
+        self.image_display.init_img(self.img[self.active_img_id][1], self.img[self.active_img_id][2])
+
+    def watch_folder(self):
+        file_path = filedialog.askdirectory()
+        if not file_path:
+            return
+        self.folder_watcher = TkFolderWatcher(self, file_path, self.on_new_folder_detected)
+        self.folder_watcher.start()
 
     def on_move(self, x, y):
-        self.footer.set_position(x,y)
+        self.footer.set_position(x, y)
 
     def set_position(self, x, y):
         self.footer.set_position(x, y)
@@ -136,7 +133,7 @@ class App(tk.Tk):
             self.image_display.init_img(self.img[self.active_img_id][1])
 
     def active_image_move_right(self):
-        if self.active_img_id < len(self.img):
+        if self.active_img_id < len(self.img) - 1:
             self.active_img_id += 1
             self._lock_unlock_button()
             self.footer.set_file(self.img[self.active_img_id][0])
@@ -153,8 +150,23 @@ class App(tk.Tk):
         if self.active_img_id == 0:
             self.footer.update_navigation_state_left(has_prev=False)
 
-        if self.active_img_id == len(self.img):
+        if self.active_img_id == len(self.img) -1:
             self.footer.update_navigation_state_right(has_next=False)
+
+    # -- Finished Footer --
+
+    def stop_watch_folder(self):
+        self.folder_watcher.stop()
+        self.folder_watcher = None
+
+    def on_new_folder_detected(self, image_path: str, clusters: List[ClusterType]):
+        self.img.append([image_path, Image.open(image_path).copy(), clusters])
+        self.active_img_id = len(self.img) - 1
+        self.image_display.init_img(self.img[self.active_img_id][1])
+        self.footer.set_file(image_path)
+        self._lock_unlock_button()
+
+        self.image_display.init_img(self.img[self.active_img_id][1])
 
 
 if __name__ == "__main__":

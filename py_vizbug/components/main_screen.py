@@ -3,7 +3,8 @@ from PIL import Image, ImageTk
 
 from .components_helper import do_nothing
 from .zoom_rectangle import ZoomRectangle
-
+from .custom_types import ClusterType
+from PIL import ImageDraw
 
 class MainImageDisplay(tk.Frame):
     def __init__(self, root, set_color=None, set_position=None):
@@ -39,10 +40,14 @@ class MainImageDisplay(tk.Frame):
         self.zoom_offset = (0, 0)
         self.crop_box = None
 
-
-    def init_img(self, image: Image.Image):
+    def init_img(self, image: Image.Image, bounding_boxes = None):
         self.original_image = image
-        self.image = image
+
+        if bounding_boxes:
+            draw = ImageDraw.Draw(self.original_image)
+            for (min_i, min_j), (max_i, max_j), _ in bounding_boxes:
+                draw.rectangle([(min_j, min_i), (max_j, max_i)], outline="red", width=2)
+
         self.offset = (0, 0)
         self.zoom_offset = (0, 0)
         self.zoom_rectangle.destroy(self.canvas)
@@ -167,4 +172,5 @@ class MainImageDisplay(tk.Frame):
         self._process_img()
 
     def draw_bounding_boxes(self):
+
         pass
