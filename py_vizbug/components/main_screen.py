@@ -57,7 +57,7 @@ class MainImageDisplay(tk.Frame):
         top = int(self.offset_y)
         box = (left, top, left + zoom_w, top + zoom_h)
 
-        cropped = self.original.crop(box)
+        cropped = self.original_with_bb.crop(box)
         resized = cropped.resize((viewport_w, viewport_h), Image.NEAREST)
         self.tk_image = ImageTk.PhotoImage(resized)
 

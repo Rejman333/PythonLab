@@ -130,14 +130,14 @@ class App(tk.Tk):
             self.active_img_id -= 1
             self._lock_unlock_button()
             self.footer.set_file(self.img[self.active_img_id][0])
-            self.image_display.init_img(self.img[self.active_img_id][1])
+            self.image_display.init_img(self.img[self.active_img_id][1], self.img[self.active_img_id][2])
 
     def active_image_move_right(self):
         if self.active_img_id < len(self.img) - 1:
             self.active_img_id += 1
             self._lock_unlock_button()
             self.footer.set_file(self.img[self.active_img_id][0])
-            self.image_display.init_img(self.img[self.active_img_id][1])
+            self.image_display.init_img(self.img[self.active_img_id][1], self.img[self.active_img_id][2])
 
     def _lock_unlock_button(self):
 
@@ -162,11 +162,10 @@ class App(tk.Tk):
     def on_new_folder_detected(self, image_path: str, clusters: List[ClusterType]):
         self.img.append([image_path, Image.open(image_path).copy(), clusters])
         self.active_img_id = len(self.img) - 1
-        self.image_display.init_img(self.img[self.active_img_id][1])
         self.footer.set_file(image_path)
         self._lock_unlock_button()
 
-        self.image_display.init_img(self.img[self.active_img_id][1])
+        self.image_display.init_img(self.img[self.active_img_id][1], self.img[self.active_img_id][2])
 
 
 if __name__ == "__main__":
