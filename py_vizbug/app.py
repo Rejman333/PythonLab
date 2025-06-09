@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import filedialog
 from PIL import Image
 
+from py_vizbug.components.TkFolderWatcher import TkFolderWatcher
 from py_vizbug.components.footer import Footer
 from py_vizbug.components.menu_bar import MenuBar
 from py_vizbug.components.main_screen import MainImageDisplay
@@ -28,7 +29,7 @@ class App(tk.Tk):
         self.grid_columnconfigure(0, weight=1)
 
         # --- Menu bar ---
-        self.menu_bar = MenuBar(self, on_open=self.set_img, on_bounding=self.set_clusters)
+        self.menu_bar = MenuBar(self, on_open=self.set_img, on_bounding=self.set_clusters, on_watch=self.watch_folder)
         # --- Image display area ---
         self.image_display = MainImageDisplay(self, self.set_color, self.set_position)
         self.image_display.grid(row=0, column=0, sticky="nsew")
@@ -43,6 +44,32 @@ class App(tk.Tk):
         # --- Internal state ---
         self.img = []
         self.active_img_id = None
+
+        self.folder_watcher = None
+
+    def watch_folder(self):
+        file_path = filedialog.askdirectory()
+        if not file_path:
+            return
+        self.folder_watcher = TkFolderWatcher(self, file_path, self.handle_new_file)
+        self.folder_watcher.start()
+
+    def stop_watch_folder(self):
+        self.folder_watcher.stop()
+        self.folder_watcher = None
+
+    def handle_new_file(self, file_path):
+        print(f"📄 New file: {file_path}")
+        self.set_img_from_path(file_path)
+
+    def set_img_from_path(self, file_path):
+        if not file_path:
+            return
+        self.img.append([file_path, Image.open(file_path).copy(), None])
+        self.footer.set_file(file_path)
+        self.active_img_id = len(self.img) - 1
+        self._lock_unlock_button()
+        self.image_display.init_img(self.img[self.active_img_id][1])
 
     def set_img(self):
         file_path = filedialog.askopenfilename()
