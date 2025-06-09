@@ -1,6 +1,6 @@
-from pycluster.src.cli_parse import prepare_cli
-from pycluster.src.img_procesing import ImgProcessor
-from pycluster.src.save import save_to_img
+from src.cli_parse import prepare_cli
+from src.img_procesing import ImgProcessor
+from src.save import save_to_img
 
 def main():
     args = prepare_cli()

@@ -4,8 +4,8 @@ from PIL import Image
 from typing import List
 import numpy as np
 from numpy.typing import NDArray
-from pycluster.src.custom_types import ClusterType
-from pycluster.src.save import save_to_img, save_clusters
+from . custom_types import ClusterType
+from . save import save_to_img, save_clusters
 
 def save_debug_step(step_number: int, img: NDArray[np.uint8], clusters: List[ClusterType], base_dir: str = 'debug'):
 

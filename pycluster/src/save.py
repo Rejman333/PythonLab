@@ -2,7 +2,7 @@ import numpy as np
 import json
 from typing import List
 from PIL import Image, ImageDraw
-from pycluster.src.custom_types import ClusterType
+from . custom_types import ClusterType
 
 
 def save_to_img(img: np.ndarray, clusters: List[ClusterType], save_path: str):

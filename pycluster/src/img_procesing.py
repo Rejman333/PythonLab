@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 from PIL import Image, ImageDraw
 from numpy.typing import NDArray
@@ -7,8 +9,8 @@ import matplotlib.patches as patches
 
 from typing import List
 
-from pycluster.src.custom_types import ClusterType
-from pycluster.src.img_debuger import save_debug_step
+from . custom_types import ClusterType
+from . img_debuger import save_debug_step
 
 
 class ImgProcessor:
@@ -165,6 +167,7 @@ class ImgProcessor:
                 if img[i][j] == 0:
                     bounds = [i, j, i, j, 0]
                     ImgProcessor.get_nearest(i, j, img, bounds)
+                    time.sleep(5)
                     clusters.append(((bounds[0], bounds[1]), (bounds[2], bounds[3]), bounds[4]))
                     save_debug_step(step_number, self.img , clusters)
                     step_number+=1
