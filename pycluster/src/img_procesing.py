@@ -8,6 +8,7 @@ import matplotlib.patches as patches
 from typing import List
 
 from pycluster.src.custom_types import ClusterType
+from pycluster.src.img_debuger import save_debug_step
 
 
 class ImgProcessor:
@@ -132,8 +133,7 @@ class ImgProcessor:
         ImgProcessor.get_nearest(i, j - 1, img, bounds)
         ImgProcessor.get_nearest(i, j + 1, img, bounds)
 
-    @staticmethod
-    def find_clusters(img: NDArray[np.uint8]) -> List[ClusterType]:
+    def find_clusters(self, img: NDArray[np.uint8]) -> List[ClusterType]:
         """
         Identifies clusters of connected pixels with a value of 0 in the given image and
         returns their bounding boxes.
@@ -159,13 +159,15 @@ class ImgProcessor:
         an iterative approach may be more robust for larger images.
         """
         clusters = []
-
+        step_number = 0
         for i in range(img.shape[0]):
             for j in range(img.shape[1]):
                 if img[i][j] == 0:
                     bounds = [i, j, i, j, 0]
                     ImgProcessor.get_nearest(i, j, img, bounds)
                     clusters.append(((bounds[0], bounds[1]), (bounds[2], bounds[3]), bounds[4]))
+                    save_debug_step(step_number, self.img , clusters)
+                    step_number+=1
 
         return clusters
 

@@ -3,8 +3,8 @@ import tkinter as tk
 from tkinter import filedialog
 from PIL import Image, ImageTk
 
-WINDOW_WIDTH = 1200
-WINDOW_HEIGHT = 800
+WINDOW_WIDTH = 1000
+WINDOW_HEIGHT = 700
 
 
 class Visualizer2:

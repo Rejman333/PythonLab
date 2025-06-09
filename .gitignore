@@ -4,3 +4,4 @@ debug
 images
 *.egg-info
 __pycache__
+todo.txt
