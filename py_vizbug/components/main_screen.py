@@ -1,10 +1,8 @@
 import tkinter as tk
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageDraw
 
 from .components_helper import do_nothing
-from .zoom_rectangle import ZoomRectangle
-from .custom_types import ClusterType
-from PIL import ImageDraw
+
 
 class MainImageDisplay(tk.Frame):
     def __init__(self, root, set_color=None, set_position=None):
@@ -13,163 +11,136 @@ class MainImageDisplay(tk.Frame):
         self.set_color = set_color or do_nothing()
         self.set_position = set_position or do_nothing()
 
-        self.grid(row=0, column=0, sticky="nsew")
-        self.rowconfigure(0, weight=1)
-        self.columnconfigure(0, weight=1)
-
         self.canvas = tk.Canvas(self, bg="black")
-        self.canvas.grid(row=0, column=0, sticky="nsew")
+        self.canvas.pack(fill="both", expand=True)
 
-        self.canvas.bind("<Configure>", self._on_canvas_resize)
-        self.canvas.bind("<ButtonPress-3>", self.right_click)
-        self.canvas.bind("<B3-Motion>", self.right_click_motion)
-        self.canvas.bind("<ButtonPress-1>", self.left_click)
-        self.canvas.bind("<B1-Motion>", self.left_click_motion)
-        self.canvas.bind("<ButtonRelease-1>", self.left_click_release)
-        self.canvas.bind("<Motion>", self.on_mouse_move)
+        self.original = None
+        self.original_with_bb = None
+        self.tk_image = None
 
+        self.zoom = 1.0
+        self.offset_x = 0
+        self.offset_y = 0
+        self.image_id = None
 
-        self.original_image = None
-        self.original_image_bb = None
-        self.image = None
-        self.tk_img = None
-        self.canvas_img_id = None
+        self.x_anchor = 0
+        self.y_anchor = 0
 
-        self.start_drag = None
-        self.offset = (0, 0)
+        self.viewport_size_width = self.canvas.winfo_width()
+        self.viewport_size_height = self.canvas.winfo_height()
 
-        self.zoom_rectangle = ZoomRectangle()
-        self.zoom_offset = (0, 0)
-        self.crop_box = None
+        self.canvas.bind("<Motion>", self.mouse_move)
+        self.canvas.bind("<MouseWheel>", self.zoom_event)
+        self.canvas.bind("<ButtonPress-1>", self.start_pan)
+        self.canvas.bind("<B1-Motion>", self.do_pan)
+        self.canvas.bind("<Configure>", self.do_resize)
+        self.canvas.bind_all("<Escape>", self.reset_view)
 
-    def init_img(self, image: Image.Image, bounding_boxes = None):
-        self.original_image = image
-        self.original_image_bb = image.copy()
-
+    def init_img(self, image, bounding_boxes=None):
+        self.original = image.convert("RGB")
+        self.original_with_bb = image.copy()
         if bounding_boxes:
-            draw = ImageDraw.Draw(self.original_image_bb)
+            draw = ImageDraw.Draw(self.original_with_bb)
             for (min_i, min_j), (max_i, max_j), _ in bounding_boxes:
                 draw.rectangle([(min_j, min_i), (max_j, max_i)], outline="red", width=2)
 
-        self.offset = (0, 0)
-        self.zoom_offset = (0, 0)
-        self.zoom_rectangle.destroy(self.canvas)
-        self.crop_box = (0, 0, self.original_image.width, self.original_image.height)
+        self.draw_image()
 
-        self._process_img()
+    def draw_image(self):
+        viewport_w = self.canvas.winfo_width()
+        viewport_h = self.canvas.winfo_height()
 
-    def on_mouse_move(self, event):
-        if self.canvas_img_id is None:
-            return
+        zoom_w = int(viewport_w / self.zoom)
+        zoom_h = int(viewport_h / self.zoom)
 
-        x, y = self._from_screen_to_img_point_convertion((event.x, event.y))
-        self.set_position(self.zoom_offset[0] + x + 1, self.zoom_offset[1] + y + 1)
-        self.set_color(self.image.getpixel((x, y)))
+        left = int(self.offset_x)
+        top = int(self.offset_y)
+        box = (left, top, left + zoom_w, top + zoom_h)
 
-    def left_click(self, event):
-        if self.canvas_img_id is None:
-            return
-        if self.zoom_rectangle.is_rectangle_finished:
-            if self.zoom_rectangle.is_clicked((event.x, event.y)):
-                print("Zoom")
-                self._zoom_img()
-            self.zoom_rectangle.destroy(self.canvas)
-            self.canvas.config(cursor="arrow")
+        cropped = self.original.crop(box)
+        resized = cropped.resize((viewport_w, viewport_h), Image.NEAREST)
+        self.tk_image = ImageTk.PhotoImage(resized)
 
+        # Wycentrowanie obrazu (jeśli canvas większy niż obraz)
+
+        self.x_anchor = max((viewport_w - self.original.width * self.zoom) // 2, 0)
+        self.y_anchor = max((viewport_h - self.original.height * self.zoom) // 2, 0)
+
+        if self.image_id:
+            self.canvas.itemconfig(self.image_id, image=self.tk_image)
+            self.canvas.coords(self.image_id, self.x_anchor, self.y_anchor)  # ← kluczowe!
         else:
-            self.canvas.config(cursor="cross")
-            self.zoom_rectangle.destroy(self.canvas)
-            self.zoom_rectangle.create(self.canvas, (event.x, event.y))
+            self.image_id = self.canvas.create_image(self.x_anchor, self.y_anchor, anchor="nw", image=self.tk_image)
+
+    def zoom_event(self, event):
+        factor = 1.1 if event.delta > 0 else 0.9
+        old_zoom = self.zoom
+        self.zoom *= factor
+        # Zoom center: keep mouse position fixed relative to image
+        mx, my = event.x, event.y
+        ox = self.offset_x + mx / old_zoom
+        oy = self.offset_y + my / old_zoom
+        self.offset_x = ox - mx / self.zoom
+        self.offset_y = oy - my / self.zoom
+        self.clamp_offset()
+        self.draw_image()
+
+    def start_pan(self, event):
+        self.pan_start = (event.x, event.y)
+
+    def do_pan(self, event):
+        dx = (event.x - self.pan_start[0]) / self.zoom
+        dy = (event.y - self.pan_start[1]) / self.zoom
+        self.offset_x -= dx
+        self.offset_y -= dy
+        self.pan_start = (event.x, event.y)
+        self.clamp_offset()
+        self.draw_image()
+
+    def mouse_move(self, event):
+        if not self.tk_image or not self.original:
             return
 
-    def left_click_motion(self, event):
-        if self.canvas_img_id is None:
-            return
+        # Local cursor position relative to image on canvas
+        local_x = event.x - self.x_anchor
+        local_y = event.y - self.y_anchor
 
-        if self.zoom_rectangle.start_position:
-            self.zoom_rectangle.move(self.canvas, (event.x, event.y))
+        canvas_w = self.tk_image.width()
+        canvas_h = self.tk_image.height()
 
-    def left_click_release(self, event):
-        if self.canvas_img_id is None:
-            return
+        crop_w = canvas_w / self.zoom
+        crop_h = canvas_h / self.zoom
 
-        if self.zoom_rectangle.end_position:
-            self.canvas.config(cursor="arrow")
-            self.zoom_rectangle.finish()
+        pixel_w = canvas_w / crop_w  # czyli = self.zoom
+        pixel_h = canvas_h / crop_h  # czyli = self.zoom
 
-    def right_click(self, event):
-        if self.tk_img:
-            self.start_drag = (event.x, event.y)
+        # Map canvas pos to original image
+        ox = int(self.offset_x + local_x // pixel_w)
+        oy = int(self.offset_y + local_y // pixel_h)
 
-    def right_click_motion(self, event):
-        if self.tk_img and self.start_drag:
-            dx = event.x - self.start_drag[0]
-            dy = event.y - self.start_drag[1]
-            self.offset = (self.offset[0] + dx, self.offset[1] + dy)
-            self.start_drag = (event.x, event.y)
-            self.clamp_offset()
-            x, y = self._count_relative_xy()
-            self.canvas.coords(self.canvas_img_id, x, y)
+        if 0 <= ox < self.original.width and 0 <= oy < self.original.height:
+            rgb = self.original.getpixel((ox, oy))
+            self.set_position(ox, oy)
+            self.set_color(rgb)
 
     def clamp_offset(self):
-        # Prevent moving too far out of bounds
-        max_x = max(0, (self.tk_img.width() - self.canvas.winfo_width()) // 2)
-        max_y = max(0, (self.tk_img.height() - self.canvas.winfo_height()) // 2)
-        self.offset = (max(-max_x, min(self.offset[0], max_x)), max(-max_y, min(self.offset[1], max_y)))
+        viewport_w = self.canvas.winfo_width()
+        viewport_h = self.canvas.winfo_height()
 
-    def _from_screen_to_img_point_convertion(self, point):
-        x, y = self._count_relative_xy()
-        return min(max(point[0] - x, 0), self.image.width - 1), min(max(point[1] - y, 0), self.image.height - 1)
+        max_offset_x = max(0, self.original.width - viewport_w / self.zoom)
+        max_offset_y = max(0, self.original.height - viewport_h / self.zoom)
 
-    def _count_relative_xy(self):
-        relative_x = (self.canvas.winfo_width() - self.image.width) // 2 + self.offset[0]
-        relative_y = (self.canvas.winfo_height() - self.image.height) // 2 + self.offset[1]
-        return relative_x, relative_y
+        self.offset_x = max(0, min(self.offset_x, max_offset_x))
+        self.offset_y = max(0, min(self.offset_y, max_offset_y))
 
-    def _on_canvas_resize(self, event):
-        if self.tk_img and self.canvas_img_id:
-            x, y = self._count_relative_xy()
-            self.canvas.coords(self.canvas_img_id, x, y)
+    def do_resize(self, event):
+        if self.tk_image:
+            self.viewport_size_width = self.canvas.winfo_width()
+            self.viewport_size_height = self.canvas.winfo_height()
+            self.draw_image()
 
-    def _process_img(self):
-        # Crop the selected region
-        cropped = self.original_image_bb.crop(self.crop_box)
-
-        # Target size (canvas size)
-        canvas_width = self.canvas.winfo_width()
-        canvas_height = self.canvas.winfo_height()
-
-        # Original cropped size
-        img_width, img_height = cropped.size
-
-        # Compute uniform scale factor (no distortion)
-        scale = min(canvas_width // img_width, canvas_height // img_height)
-
-        # Scaled size
-        new_size = (img_width * scale, img_height * scale)
-
-        # Resize using nearest-neighbor (no smoothing)
-        if scale != 0:
-            resized = cropped.resize(new_size, Image.NEAREST)
-            self.zoom_offset = (self.zoom_offset[0] + self.offset[1], self.zoom_offset[1] + self.offset[1])
-            self.offset = (0, 0)
-        else:
-            resized = cropped
-
-        # Store and display
-        self.image = resized
-        self.tk_img = ImageTk.PhotoImage(self.image)
-
-        self.canvas.delete("all")
-
-        # Center the image
-        x, y = self._count_relative_xy()
-        self.canvas_img_id = self.canvas.create_image(x, y, image=self.tk_img, anchor="nw")
-
-    def _zoom_img(self):
-        p1_after_convertion = self._from_screen_to_img_point_convertion(self.zoom_rectangle.start_position)
-        p2_after_convertion = self._from_screen_to_img_point_convertion(self.zoom_rectangle.end_position)
-        self.crop_box = (p1_after_convertion[0], p1_after_convertion[1],
-                         p2_after_convertion[0], p2_after_convertion[1])
-        print(self.crop_box)
-        self._process_img()
+    def reset_view(self, event=None):
+        self.zoom = 1.0
+        self.offset_x = 0
+        self.offset_y = 0
+        self.draw_image()
