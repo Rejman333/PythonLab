@@ -28,7 +28,9 @@ class MainImageDisplay(tk.Frame):
         self.canvas.bind("<ButtonRelease-1>", self.left_click_release)
         self.canvas.bind("<Motion>", self.on_mouse_move)
 
+
         self.original_image = None
+        self.original_image_bb = None
         self.image = None
         self.tk_img = None
         self.canvas_img_id = None
@@ -42,9 +44,10 @@ class MainImageDisplay(tk.Frame):
 
     def init_img(self, image: Image.Image, bounding_boxes = None):
         self.original_image = image
+        self.original_image_bb = image.copy()
 
         if bounding_boxes:
-            draw = ImageDraw.Draw(self.original_image)
+            draw = ImageDraw.Draw(self.original_image_bb)
             for (min_i, min_j), (max_i, max_j), _ in bounding_boxes:
                 draw.rectangle([(min_j, min_i), (max_j, max_i)], outline="red", width=2)
 
@@ -130,7 +133,7 @@ class MainImageDisplay(tk.Frame):
 
     def _process_img(self):
         # Crop the selected region
-        cropped = self.original_image.crop(self.crop_box)
+        cropped = self.original_image_bb.crop(self.crop_box)
 
         # Target size (canvas size)
         canvas_width = self.canvas.winfo_width()
@@ -170,7 +173,3 @@ class MainImageDisplay(tk.Frame):
                          p2_after_convertion[0], p2_after_convertion[1])
         print(self.crop_box)
         self._process_img()
-
-    def draw_bounding_boxes(self):
-
-        pass
