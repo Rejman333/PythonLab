@@ -1,6 +1,4 @@
 import os
-import csv
-from PIL import Image
 from typing import List
 import numpy as np
 from numpy.typing import NDArray
@@ -8,6 +6,20 @@ from . custom_types import ClusterType
 from . save import save_to_img, save_clusters
 
 def save_debug_step(step_number: int, img: NDArray[np.uint8], clusters: List[ClusterType], base_dir: str = 'debug'):
+    """
+       Save debug information for a given processing step.
+
+       Creates a step-specific subdirectory and saves:
+       - the original image,
+       - the image with drawn clusters,
+       - the cluster data as a CSV file.
+
+       Args:
+           step_number (int): Step index used to name the debug subdirectory.
+           img (NDArray[np.uint8]): Image to be saved (with and without clusters).
+           clusters (List[ClusterType]): List of clusters to visualize and export.
+           base_dir (str, optional): Base directory to store debug data. Defaults to 'debug'.
+       """
 
     # Create base debug directory if it doesn't exist
     os.makedirs(base_dir, exist_ok=True)
@@ -27,4 +39,4 @@ def save_debug_step(step_number: int, img: NDArray[np.uint8], clusters: List[Clu
     csv_path = os.path.join(step_dir, 'data.csv')
     save_clusters(clusters, csv_path[:-4], file_format="csv")  # bez rozszerzenia
 
-    print(f"✔ Step {step_number} saved to: {step_dir}")
+    print(f"Step {step_number} saved to: {step_dir}")

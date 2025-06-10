@@ -5,6 +5,20 @@ from .components_helper import do_nothing
 
 
 class MainImageDisplay(tk.Frame):
+    """
+    A custom Tkinter Frame that displays an image with zoom and pan functionality,
+    including support for showing bounding boxes and reporting pixel color and position.
+
+    Parameters
+    ----------
+    root : tk.Widget
+        The parent widget.
+    set_color : Callable, optional
+        Callback to update the current pixel color (R, G, B).
+    set_position : Callable, optional
+        Callback to update the current pixel position (x, y).
+    """
+
     def __init__(self, root, set_color=None, set_position=None):
         super().__init__(root)
 
@@ -37,6 +51,16 @@ class MainImageDisplay(tk.Frame):
         self.canvas.bind_all("<Escape>", self.reset_view)
 
     def init_img(self, image, bounding_boxes=None):
+        """
+        Initializes and displays an image, optionally drawing bounding boxes.
+
+        Parameters
+        ----------
+        image : PIL.Image
+            The image to display.
+        bounding_boxes : list of tuple, optional
+            List of bounding boxes in the format [((min_i, min_j), (max_i, max_j), label), ...].
+        """
         self.original = image.convert("RGB")
         self.original_with_bb = image.copy()
         if bounding_boxes:
@@ -47,6 +71,10 @@ class MainImageDisplay(tk.Frame):
         self.draw_image()
 
     def draw_image(self):
+        """
+        Draws the current view of the image on the canvas, applying zoom and pan offsets.
+        Automatically resizes the image to match the canvas size.
+        """
         viewport_w = self.canvas.winfo_width()
         viewport_h = self.canvas.winfo_height()
 
@@ -73,6 +101,14 @@ class MainImageDisplay(tk.Frame):
             self.image_id = self.canvas.create_image(self.x_anchor, self.y_anchor, anchor="nw", image=self.tk_image)
 
     def zoom_event(self, event):
+        """
+        Handles mouse wheel events to zoom in and out of the image.
+
+        Parameters
+        ----------
+        event : tk.Event
+            The mouse wheel event.
+        """
         factor = 1.1 if event.delta > 0 else 0.9
         old_zoom = self.zoom
         self.zoom *= factor
@@ -86,9 +122,26 @@ class MainImageDisplay(tk.Frame):
         self.draw_image()
 
     def start_pan(self, event):
+        """
+        Starts the panning action when the left mouse button is pressed.
+
+        Parameters
+        ----------
+        event : tk.Event
+            The mouse button press event.
+        """
+
         self.pan_start = (event.x, event.y)
 
     def do_pan(self, event):
+        """
+        Updates the pan offset as the mouse is dragged.
+
+        Parameters
+        ----------
+        event : tk.Event
+            The mouse movement event during left-button drag.
+        """
         dx = (event.x - self.pan_start[0]) / self.zoom
         dy = (event.y - self.pan_start[1]) / self.zoom
         self.offset_x -= dx
@@ -98,6 +151,15 @@ class MainImageDisplay(tk.Frame):
         self.draw_image()
 
     def mouse_move(self, event):
+        """
+        Tracks the mouse cursor over the image and calls the set_position and set_color
+        callbacks with the coordinates and RGB value of the pixel under the cursor.
+
+        Parameters
+        ----------
+        event : tk.Event
+            The mouse motion event.
+        """
         if not self.tk_image or not self.original:
             return
 
@@ -124,6 +186,10 @@ class MainImageDisplay(tk.Frame):
             self.set_color(rgb)
 
     def clamp_offset(self):
+        """
+        Ensures that pan offsets stay within the bounds of the original image.
+        Called after zooming or panning.
+        """
         viewport_w = self.canvas.winfo_width()
         viewport_h = self.canvas.winfo_height()
 
@@ -134,12 +200,29 @@ class MainImageDisplay(tk.Frame):
         self.offset_y = max(0, min(self.offset_y, max_offset_y))
 
     def do_resize(self, event):
+        """
+        Redraws the image when the canvas is resized.
+
+        Parameters
+        ----------
+        event : tk.Event
+            The resize event triggered by Tkinter.
+        """
+
         if self.tk_image:
             self.viewport_size_width = self.canvas.winfo_width()
             self.viewport_size_height = self.canvas.winfo_height()
             self.draw_image()
 
     def reset_view(self, event=None):
+        """
+        Resets the zoom level and pan offset to default (1.0 zoom, top-left corner).
+
+        Parameters
+        ----------
+        event : tk.Event, optional
+            Optional keyboard or widget event triggering the reset.
+        """
         self.zoom = 1.0
         self.offset_x = 0
         self.offset_y = 0

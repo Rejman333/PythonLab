@@ -2,11 +2,11 @@ import tkinter as tk
 from tkinter import filedialog
 from PIL import Image
 
-from py_vizbug.components.TkFolderWatcher import TkFolderWatcher
-from py_vizbug.components.footer import Footer
-from py_vizbug.components.menu_bar import MenuBar
-from py_vizbug.components.main_screen import MainImageDisplay
-from py_vizbug.components.custom_types import ClusterType
+from py_g_debug.components.TkFolderWatcher import TkFolderWatcher
+from py_g_debug.components.footer import Footer
+from py_g_debug.components.menu_bar import MenuBar
+from py_g_debug.components.main_screen import MainImageDisplay
+from py_g_debug.components.custom_types import ClusterType
 
 from typing import List
 
@@ -18,6 +18,21 @@ APPLICATION_STARTING_GEOMETRY = "800x600"
 
 
 class App(tk.Tk):
+    """
+    Main application class for a simple image viewer with cluster overlay and folder watching.
+
+    Features:
+    - Loading and displaying images.
+    - Displaying cluster bounding boxes from JSON or CSV.
+    - Zoom and pan functionality.
+    - Navigation between multiple loaded images.
+    - Real-time folder monitoring for new image+data folders.
+
+    Inherits
+    --------
+    tk.Tk : Base Tkinter application window.
+    """
+
     def __init__(self):
         super().__init__()
 
@@ -52,6 +67,17 @@ class App(tk.Tk):
 
     # --Footer Functions--
     def set_img(self, file_path = None, is_from_watcher = False):
+        """
+        Loads and displays an image from the specified file path.
+
+        Parameters
+        ----------
+        file_path : str, optional
+            Path to the image file. If None, a file dialog is shown.
+        is_from_watcher : bool, optional
+            Indicates whether the image comes from the folder watcher. If False,
+            clears previous images and disables folder watching.
+        """
         if is_from_watcher is False and self.folder_watcher:
             self.folder_watcher.stop()
             self.folder_watcher = None
@@ -70,6 +96,11 @@ class App(tk.Tk):
         self.image_display.init_img(self.img[self.active_img_id][1],self.img[self.active_img_id][2])
 
     def set_clusters(self):
+        """
+        Loads cluster bounding boxes from a JSON or CSV file and applies them
+        to the currently active image.
+        """
+
         if self.active_img_id is None:
             return
 
@@ -110,6 +141,10 @@ class App(tk.Tk):
         self.image_display.init_img(self.img[self.active_img_id][1], self.img[self.active_img_id][2])
 
     def watch_folder(self):
+        """
+        Opens a folder selection dialog and starts monitoring the selected directory
+        for new subfolders containing image and cluster data.
+        """
         file_path = filedialog.askdirectory()
         if not file_path:
             return
@@ -117,15 +152,48 @@ class App(tk.Tk):
         self.folder_watcher.start()
 
     def on_move(self, x, y):
+        """
+        (Alias) Updates position info in the footer. Calls `set_position`.
+
+        Parameters
+        ----------
+        x : int
+            X-coordinate.
+        y : int
+            Y-coordinate.
+        """
         self.footer.set_position(x, y)
 
     def set_position(self, x, y):
+        """
+        Updates the footer with the current cursor position.
+
+        Parameters
+        ----------
+        x : int
+            X-coordinate on the image.
+        y : int
+            Y-coordinate on the image.
+        """
         self.footer.set_position(x, y)
 
     def set_color(self, color):
+        """
+        Updates the footer with the color at the current cursor position.
+
+        Parameters
+        ----------
+        color : tuple
+            RGB color tuple.
+        """
         self.footer.set_color(color)
 
     def active_image_move_left(self):
+        """
+        Navigates to the previous image in the list, if available.
+        Updates display and footer accordingly.
+        """
+
         if self.active_img_id > 0:
             self.active_img_id -= 1
             self._lock_unlock_button()
@@ -133,6 +201,11 @@ class App(tk.Tk):
             self.image_display.init_img(self.img[self.active_img_id][1], self.img[self.active_img_id][2])
 
     def active_image_move_right(self):
+        """
+        Navigates to the next image in the list, if available.
+        Updates display and footer accordingly.
+        """
+
         if self.active_img_id < len(self.img) - 1:
             self.active_img_id += 1
             self._lock_unlock_button()
@@ -140,7 +213,9 @@ class App(tk.Tk):
             self.image_display.init_img(self.img[self.active_img_id][1], self.img[self.active_img_id][2])
 
     def _lock_unlock_button(self):
-
+        """
+        Enables or disables navigation buttons based on the current image index.
+        """
         if self.active_img_id < len(self.img) - 1:
             self.footer.update_navigation_state_right(has_next=True)
 
@@ -156,10 +231,24 @@ class App(tk.Tk):
     # -- Finished Footer --
 
     def stop_watch_folder(self):
+        """
+        Stops the active folder watcher, if running.
+        """
+
         self.folder_watcher.stop()
         self.folder_watcher = None
 
     def on_new_folder_detected(self, image_path: str, clusters: List[ClusterType]):
+        """
+        Callback executed when a new folder with an image and cluster data is detected.
+
+        Parameters
+        ----------
+        image_path : str
+            Path to the new image file.
+        clusters : List[ClusterType]
+            List of cluster bounding boxes in the format ((min_x, min_y), (max_x, max_y), pixel_count).
+        """
         self.img.append([image_path, Image.open(image_path).copy(), clusters])
         self.active_img_id = len(self.img) - 1
         self.footer.set_file(image_path)

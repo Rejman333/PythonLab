@@ -6,6 +6,26 @@ from typing import Callable, List, Tuple
 ClusterType = Tuple[Tuple[int, int], Tuple[int, int], int]
 
 class TkFolderWatcher:
+    """
+    A simple folder watcher for Tkinter applications that polls a specified directory
+    for newly created subdirectories containing image and CSV data.
+
+    When a new folder with `image.png` is detected, optionally accompanied by `data.csv`,
+    the provided callback is called with the image path and parsed data.
+
+    Parameters
+    ----------
+    app : tk.Tk
+        The Tkinter application instance used for scheduling periodic polling.
+    folder_path : str
+        The path to the directory to be monitored.
+    callback : Callable[[str, List[ClusterType]], None]
+        A function to call when a new folder is detected. Receives the path to the image
+        and a list of bounding box data.
+    delay_ms : int, optional
+        Delay in milliseconds between each polling cycle. Default is 1000 ms.
+    """
+
     def __init__(self, app: tk.Tk, folder_path: str, callback: Callable[[str, List[ClusterType]], None], delay_ms=1000):
         self.app = app
         self.folder_path = folder_path
@@ -15,17 +35,36 @@ class TkFolderWatcher:
         self._running = False
 
     def start(self):
+        """
+        Starts the folder watching process.
+
+        Initializes the known set of subdirectories and begins polling.
+        If the folder path is invalid, prints a warning and aborts.
+        """
         if not os.path.isdir(self.folder_path):
-            print("❌ Folder does not exist:", self.folder_path)
+            print("Folder does not exist:", self.folder_path)
             return
         self._known_dirs = set(next(os.walk(self.folder_path))[1])  # only subdirs
         self._running = True
         self._poll()
 
     def stop(self):
+        """
+        Stops the folder watching process.
+
+        Prevents further polling cycles from being scheduled.
+        """
         self._running = False
 
     def _poll(self):
+        """
+        Internal method that performs a polling cycle.
+
+        Detects new subdirectories. If a subdirectory contains an `image.png` file,
+        and optionally a `data.csv` file, parses the CSV data and calls the callback
+        with the image path and list of clusters.
+        Reschedules itself using `after` for continuous monitoring.
+        """
         if not self._running:
             return
 
