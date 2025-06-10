@@ -2,11 +2,11 @@ import tkinter as tk
 from tkinter import filedialog
 from PIL import Image
 
-from py_g_debug.components.TkFolderWatcher import TkFolderWatcher
-from py_g_debug.components.footer import Footer
-from py_g_debug.components.menu_bar import MenuBar
-from py_g_debug.components.main_screen import MainImageDisplay
-from py_g_debug.components.custom_types import ClusterType
+from components.TkFolderWatcher import TkFolderWatcher
+from components.footer import Footer
+from components.menu_bar import MenuBar
+from components.main_screen import MainImageDisplay
+from components.custom_types import ClusterType
 
 from typing import List
 
