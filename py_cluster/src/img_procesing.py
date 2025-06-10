@@ -15,6 +15,15 @@ from . img_debuger import save_debug_step
 
 class ImgProcessor:
     def __init__(self, file_name: str):
+        """
+                Initializes the ImgProcessor by loading an image from the specified file path.
+
+                Parameters
+                ----------
+                file_name : str
+                    Path to the image file to be loaded.
+                """
+
         self.file_name = None
         self.gray_img = None
         self.threshold_img = None
@@ -22,7 +31,15 @@ class ImgProcessor:
         self.file_name = file_name
         self.img = np.array(Image.open(file_name))
 
-    def load_img(self, file_name):
+    def load_img(self, file_name: str):
+        """
+                Reloads the image from a new file path, resetting all previously processed data.
+
+                Parameters
+                ----------
+                file_name : str
+                    Path to the new image file to be loaded.
+                """
         self.__init__(file_name)
 
     @staticmethod
@@ -216,9 +233,26 @@ class ImgProcessor:
         plt.axis('off')
         plt.show()
 
-
-
     def create_clusters(self, gray_option: int, threshold: int) -> List[ClusterType]:
+        """
+                Processes the image to find clusters using grayscale conversion and thresholding.
+
+                Parameters
+                ----------
+                gray_option : int
+                    Grayscale conversion option (0 = red, 1 = green, 2 = blue, 3 = average).
+                threshold : int
+                    Threshold value for binary segmentation (0–255).
+
+                Returns
+                -------
+                List[ClusterType]
+                    A list of detected clusters, each represented as a bounding box and pixel count.
+
+                Notes
+                -----
+                This method stores intermediate results in `self.gray_img`, `self.threshold_img`, and `self.clusters`.
+                """
         self.gray_img = self.grayscale(self.img, gray_option)
         self.threshold_img = self.threshold(self.gray_img, threshold)
         self.clusters = self.find_clusters(self.threshold_img)

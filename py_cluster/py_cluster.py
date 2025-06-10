@@ -3,8 +3,14 @@ from src.img_procesing import ImgProcessor
 from src.save import save_to_img
 
 def main():
+    """
+        Entry point of the Py Cluster application.
+
+        Parses command-line arguments, processes the input image, performs clustering,
+        displays the clusters, and saves the result to an output file.
+        """
     args = prepare_cli()
-    print("I am working!")
+    print("Py Cluster is working...!")
     img_processor = ImgProcessor(args.filename)
     img_processor.create_clusters(args.gray, args.threshold)
 

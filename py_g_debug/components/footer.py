@@ -4,6 +4,20 @@ from typing import Callable, Optional
 
 
 class Footer:
+    """
+      A footer widget for a Tkinter GUI application that displays file name,
+      mouse position, pixel color, and navigation buttons.
+
+      Parameters
+      ----------
+      root : tk.Widget
+          The root widget to which the footer is attached.
+      on_prev_callback : Callable[[], None]
+          Callback function triggered when the "previous" button is clicked.
+      on_post_callback : Callable[[], None]
+          Callback function triggered when the "next" button is clicked.
+      """
+
     def __init__(self, root, on_prev_callback, on_post_callback):
         self.frame = ttk.Frame(root)
         self.frame.grid(row=1, column=0, sticky="ew")
@@ -45,31 +59,94 @@ class Footer:
         self.on_next_callback = on_post_callback
 
     def set_file(self, filename: str):
+        """
+            Updates the file label to show the current file name.
+
+            Parameters
+            ----------
+            filename : str
+                The name of the file to display.
+        """
         self.file_label.config(text=f"File: {filename}")
 
     def set_position(self, x: int, y: int):
+        """
+               Updates the position label to show current cursor coordinates.
+
+               Parameters
+               ----------
+               x : int
+                   X-coordinate of the cursor.
+               y : int
+                   Y-coordinate of the cursor.
+        """
+
         self.pos_label.config(text=f"X: {x}, Y: {y}")
 
     def set_color(self, rgba: tuple):
+        """
+              Updates the color display with the given RGB(A) color.
+
+              Parameters
+              ----------
+              rgba : tuple
+                  A tuple containing at least 3 integers (R, G, B) in range 0–255.
+        """
         r, g, b = rgba[:3]
         self.color_label.config(text=f"Color: {r}, {g}, {b}")
         hex_color = f"#{r:02x}{g:02x}{b:02x}"
         self.color_canvas.itemconfig(self.color_rect, fill=hex_color)
 
     def set_navigation_callbacks(self, on_prev: Callable[[], None], on_next: Callable[[], None]):
+        """
+        Sets the callback functions for navigation buttons.
+
+        Parameters
+        ----------
+        on_prev : Callable[[], None]
+            Callback for the "previous" button.
+        on_next : Callable[[], None]
+            Callback for the "next" button.
+        """
         self.on_prev_callback = on_prev
         self.on_next_callback = on_next
 
     def on_prev(self):
+        """
+        Internal method called when the "previous" button is pressed.
+        Triggers the on_prev_callback if it is set.
+        """
+
         if self.on_prev_callback:
             self.on_prev_callback()
 
     def on_next(self):
+        """
+        Internal method called when the "next" button is pressed.
+        Triggers the on_next_callback if it is set.
+        """
+
         if self.on_next_callback:
             self.on_next_callback()
 
     def update_navigation_state_left(self, has_prev: bool):
+        """
+        Enables or disables the "previous" button based on navigation state.
+
+        Parameters
+        ----------
+        has_prev : bool
+            If True, enables the button; otherwise disables it.
+        """
         self.prev_button.config(state="normal" if has_prev else "disabled")
 
     def update_navigation_state_right(self, has_next: bool):
+        """
+        Enables or disables the "next" button based on navigation state.
+
+        Parameters
+        ----------
+        has_next : bool
+            If True, enables the button; otherwise disables it.
+        """
         self.next_button.config(state="normal" if has_next else "disabled")
