@@ -1,4 +1,4 @@
-# Py_cluster
+# Py_g_debug and Py_cluster
 Py_cluster is a simple application that enables visual debugging, which is useful when working with images.
 In addition, the project includes a basic clustering algorithm as an example of how to use it.
 
