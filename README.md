@@ -2,6 +2,13 @@
 Py_g_debug is a simple application that enables visual debugging, which is useful when working with images.
 In addition, the project includes a basic clustering algorithm(Py_cluster) as an example of how to use it.
 
+## Demo
+
+**Example of debugging:**
+![Debug](media/debug.gif)
+
+**Example of inspecting image:**
+![inspect](media/inspect.gif)
 
 ## Installation
 
